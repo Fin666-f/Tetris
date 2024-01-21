@@ -87,8 +87,8 @@ class Interface:
         font = pygame.font.Font(None, 70)
         text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(text, (10, 10))
-        inner_rect = (X_WIN, Y_WIN, X_SIZE, Y_SIZE)
-        pygame.draw.rect(screen, PURPLE, inner_rect, 1)
+        inner_rect = (X_WIN + 8, Y_WIN + 12, X_SIZE - 14, Y_SIZE - 12)
+        pygame.draw.rect(screen, PURPLE, inner_rect, 20)
 
     def check_collision(self, x, y, figure):
         for i in range(len(figure)):
