@@ -4,13 +4,16 @@ import random
 
 pygame.init()
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+BORDER_WIDTH = 750
+BORDER_HEIGHT = 600
+
+SCREEN_WIDTH = BORDER_WIDTH + 200
+SCREEN_HEIGHT = BORDER_HEIGHT
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GRAY = (128, 128, 128)
-PURPLE = (128, 0, 128)
+PURPLE = (139, 0, 255)
 
 BLOCK_SIZE = 30
 
@@ -39,8 +42,7 @@ FIGURES = [
      [1, 1, 1]]
 ]
 
-# +200 чтобы с рамкой не заморачиваться
-screen = pygame.display.set_mode((SCREEN_WIDTH + 200, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Tetris")
 
 def new_figure():
@@ -50,15 +52,11 @@ def new_figure():
     next_figure = random.choice(FIGURES)
 
     # координаты фигуры, посередине экрана
-    current_x = (SCREEN_WIDTH // BLOCK_SIZE - len(current_figure[0])) // 2
+    current_x = (BORDER_WIDTH // BLOCK_SIZE - len(current_figure[0])) // 2
     current_y = 0
-
-    next_x = SCREEN_WIDTH // BLOCK_SIZE + 2
-    next_y = 2
 
     # пока что все белого цвета, серого когда упадут
     draw_figure(current_x, current_y, current_figure, WHITE)
-    draw_figure(next_x, next_y, next_figure, WHITE)
     draw_interface()
 
     pygame.display.flip()
@@ -66,7 +64,7 @@ def new_figure():
 def check_collision(x, y, figure):
     for i in range(len(figure)):
         for j in range(len(figure[i])):
-            if figure[i][j] and (x + j < 0 or x + j >= SCREEN_WIDTH // BLOCK_SIZE or y + i >= SCREEN_HEIGHT // BLOCK_SIZE or board.get((x + j, y + i))):
+            if figure[i][j] and (x + j < 0 or x + j >= BORDER_WIDTH // BLOCK_SIZE or y + i >= BORDER_HEIGHT // BLOCK_SIZE or board.get((x + j, y + i))):
                 return True
     return False
 
@@ -89,13 +87,13 @@ def draw_interface():
     font = pygame.font.SysFont(None, 30)
     text = font.render(f"Score: {score}", True, WHITE)
     screen.blit(text, (10, 10))
-    inner_rect = (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+    inner_rect = (0, 0, BORDER_WIDTH, BORDER_HEIGHT)
     pygame.draw.rect(screen, PURPLE, inner_rect, 5)
 
 board = {}
 current_figure = random.choice(FIGURES)
 next_figure = random.choice(FIGURES)
-current_x = SCREEN_WIDTH // 2 - len(current_figure[0]) * BLOCK_SIZE // 2
+current_x = BORDER_WIDTH // 2 - len(current_figure[0]) * BLOCK_SIZE // 2
 current_y = 0
 score = 0
 
@@ -133,21 +131,21 @@ while running:
 
     screen.fill(BLACK)
 
-    for i in range(SCREEN_HEIGHT // BLOCK_SIZE):
-        for j in range(SCREEN_WIDTH // BLOCK_SIZE):
+    for i in range(BORDER_HEIGHT // BLOCK_SIZE):
+        for j in range(BORDER_WIDTH // BLOCK_SIZE):
             if board.get((j, i)):
                 draw_block(j, i, GRAY)
 
     # проверка что за края экрана не улетело ничего
     if current_x < 0:
         current_x = 0
-    elif current_x + len(current_figure[0]) > SCREEN_WIDTH // BLOCK_SIZE:
-        current_x = SCREEN_WIDTH // BLOCK_SIZE - len(current_figure[0])
-    if current_y + len(current_figure) > SCREEN_HEIGHT // BLOCK_SIZE:
-        current_y = SCREEN_HEIGHT // BLOCK_SIZE - len(current_figure)
+    elif current_x + len(current_figure[0]) > BORDER_WIDTH // BLOCK_SIZE:
+        current_x = BORDER_WIDTH // BLOCK_SIZE - len(current_figure[0])
+    if current_y + len(current_figure) > BORDER_HEIGHT // BLOCK_SIZE:
+        current_y = BORDER_HEIGHT // BLOCK_SIZE - len(current_figure)
 
     draw_figure(current_x, current_y, current_figure, WHITE)
-    draw_figure(SCREEN_WIDTH // BLOCK_SIZE + 2, 2, next_figure, WHITE)
+    draw_figure(BORDER_WIDTH // BLOCK_SIZE + 2, 2, next_figure, WHITE)
     draw_interface()
 
     pygame.display.flip()
