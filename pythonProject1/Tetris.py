@@ -44,6 +44,8 @@ FIGURES = [
      [1, 1, 1]]
 ]
 
+blocks = {}
+
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Tetris")
 
@@ -95,10 +97,33 @@ class Interface:
             for j in range(len(figure[i])):
                 if figure[i][j] and (x + j < X_WIN or x + j >= X_WIN + BORDER_WIDTH // BLOCK_SIZE or
                                       y + i >= BORDER_HEIGHT // BLOCK_SIZE or board.get((x + j, y + i))):
-                    print(x, y)
-                    print('blyaaaaa')
+                    if y in blocks.keys():
+                        blocks[y].append(x)
+                    else:
+                        blocks[y] = [x]
                     return True
         return False
+
+ys = {}
+
+
+def remove_full_lines(blocks):
+    for key in blocks.keys():
+        if blocks[key]:
+            x, y = key
+            if y in ys.keys():
+                ys[y].append(x)
+            else:
+                ys[y] = [x]
+    for y in ys.keys():
+        print(set(ys[y]))
+        if len(set(ys[y])) == 14:
+            print(set(ys[y]))
+            print(board)
+            for x in ys[y]:
+                if (x, y) in board.keys():
+                    del board[(x, y)]
+            print('hooray')
 
 
 interface = Interface()
@@ -136,6 +161,7 @@ while running:
     else:
         figure.add_figure_to_board(current_x, current_y, current_figure)
         current_figure, next_figure, current_x, current_y = figure.new_figure()
+        remove_full_lines(board)
 
     screen.fill(BLACK)
     screen.blit(image, (0, 0))
@@ -143,6 +169,7 @@ while running:
         for j in range(SCREEN_WIDTH // BLOCK_SIZE):
             if board.get((j, i)):
                 figure.draw_block(j, i, GRAY)
+
 
     # проверка что за края экрана не улетело ничего
     if current_x < 0:
