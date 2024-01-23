@@ -105,7 +105,7 @@ board = {}
 score = 0
 running = True
 clock = pygame.time.Clock()
-image = pygame.image.load('church_Blazhenov.png')
+image = pygame.image.load('../church_Blazhenov.png')
 
 current_figure, next_figure, current_x, current_y = figure.new_figure()
 
