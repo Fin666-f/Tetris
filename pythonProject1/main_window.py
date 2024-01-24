@@ -81,7 +81,7 @@ class Main_window:
 
     def prosses_control(self, pos, button):
         if button == 1:
-            if (pos[0] >= ((SCREEN_WIDTH - 1440) // 2) and pos[0] <= ((SCREEN_WIDTH - 1440) // 2 + 1440) and
+            if (pos[0] >= ((SCREEN_WIDTH - 864) // 2) and pos[0] <= ((SCREEN_WIDTH - 864) // 2 + 864) and
                     pos[1] >= 360 and pos[1] <= 480):
                 self.count_left = str((int(self.count_left) + 1) % 3)
                 return True
@@ -96,6 +96,8 @@ class Main_window:
             elif (pos[0] >= ((SCREEN_WIDTH - 864) // 2) and pos[0] <= ((SCREEN_WIDTH - 864) // 2 + 864) and
                     pos[1] >= 780 and pos[1] <= 900):
                 return False
+            else:
+                return True
 
     def render_control_screen(self):
         fon = pygame.transform.scale(pygame.image.load('kreml.png'), (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -131,6 +133,8 @@ class Main_window:
                     self.continue_run = self.prosses_control(event.pos, event.button)
                     self.save_control()
                     self.render_control_screen()
+                elif event.type == pygame.QUIT:
+                    self.terminate()
             if not self.continue_run:
                 self.start_screen()
                 run = False
@@ -172,6 +176,8 @@ class Main_window:
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.prosses_start_screen(event.pos, event.button)
+                elif event.type == pygame.QUIT:
+                    self.terminate()
             self.render_main_screen()
             pygame.display.flip()
             self.clock.tick(self.fps)
