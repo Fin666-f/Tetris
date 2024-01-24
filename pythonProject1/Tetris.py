@@ -8,15 +8,16 @@ SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 
 BLOCK_SIZE = 52
-X_SIZE = BLOCK_SIZE * 14
-Y_SIZE = BLOCK_SIZE * 20
-X_WIN = (SCREEN_WIDTH - X_SIZE) // 2
-Y_WIN = (SCREEN_HEIGHT - Y_SIZE) // 2
+
+BORDER_WIDTH = BLOCK_SIZE * 14
+BORDER_HEIGHT = BLOCK_SIZE * 20
+
+X_WIN = (SCREEN_WIDTH - BORDER_WIDTH) // 2 // BLOCK_SIZE
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GRAY = (128, 128, 128)
-PURPLE = (128, 0, 128)
+PURPLE = (139, 0, 255)
 
 FALL_SPEED = 3  # скорость падения фигур. оптимальная 3-5
 
@@ -42,6 +43,8 @@ FIGURES = [
     [[0, 0, 1],
      [1, 1, 1]]
 ]
+
+blocks = {}
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Tetris")
@@ -81,22 +84,46 @@ class Figure:
                     board[(x + j, y + i)] = 1
 
 
-
 class Interface:
     def draw_interface(self):
         font = pygame.font.Font(None, 70)
         text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(text, (10, 10))
-        inner_rect = (X_WIN + 8, Y_WIN + 12, X_SIZE - 14, Y_SIZE - 12)
+        inner_rect = (X_WIN * BLOCK_SIZE, 0, BORDER_WIDTH, BORDER_HEIGHT)
         pygame.draw.rect(screen, PURPLE, inner_rect, 20)
 
     def check_collision(self, x, y, figure):
         for i in range(len(figure)):
             for j in range(len(figure[i])):
-                if (figure[i][j] and (x + j < 0 or x + j >= SCREEN_WIDTH // BLOCK_SIZE or
-                        y + i >= SCREEN_HEIGHT // BLOCK_SIZE or board.get((x + j, y + i)))):
+                if figure[i][j] and (x + j < X_WIN or x + j >= X_WIN + BORDER_WIDTH // BLOCK_SIZE or
+                                      y + i >= BORDER_HEIGHT // BLOCK_SIZE or board.get((x + j, y + i))):
+                    if y in blocks.keys():
+                        blocks[y].append(x)
+                    else:
+                        blocks[y] = [x]
                     return True
         return False
+
+ys = {}
+
+
+def remove_full_lines(blocks):
+    for key in blocks.keys():
+        if blocks[key]:
+            x, y = key
+            if y in ys.keys():
+                ys[y].append(x)
+            else:
+                ys[y] = [x]
+    for y in ys.keys():
+        print(set(ys[y]))
+        if len(set(ys[y])) == 14:
+            print(set(ys[y]))
+            print(board)
+            for x in ys[y]:
+                if (x, y) in board.keys():
+                    del board[(x, y)]
+            print('hooray')
 
 
 interface = Interface()
@@ -105,12 +132,12 @@ board = {}
 score = 0
 running = True
 clock = pygame.time.Clock()
-image = pygame.image.load('../church_Blazhenov.png')
+image = pygame.image.load('kreml.png')
 
 current_figure, next_figure, current_x, current_y = figure.new_figure()
 
 while running:
-    #print()
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -128,11 +155,13 @@ while running:
             elif event.key == pygame.K_SPACE:
                 pass
 
+
     if not interface.check_collision(current_x, current_y + 1, current_figure):
         current_y += 1
     else:
         figure.add_figure_to_board(current_x, current_y, current_figure)
         current_figure, next_figure, current_x, current_y = figure.new_figure()
+        remove_full_lines(board)
 
     screen.fill(BLACK)
     screen.blit(image, (0, 0))
@@ -140,6 +169,7 @@ while running:
         for j in range(SCREEN_WIDTH // BLOCK_SIZE):
             if board.get((j, i)):
                 figure.draw_block(j, i, GRAY)
+
 
     # проверка что за края экрана не улетело ничего
     if current_x < 0:
