@@ -69,7 +69,7 @@ class Figure:
         self.draw_figure(self.current_x, self.current_y, self.current_figure, self.current_color)
         self.draw_figure(self.next_x, self.next_y, self.next_figure, self.next_color)
 
-        return self.current_figure, self.next_figure, self.current_x, self.current_y, self.current_color
+        return self.current_figure, self.next_figure, self.current_x, self.current_y, self.next_y, self.current_color
 
     def load_image(self, color, dark=False):
         name = color + '_Block.png'
@@ -211,7 +211,7 @@ class Main_window:
         sys.exit()
 
     def run_game(self):
-        self.game_over = 0
+        self.game_over = False
         run = True
         interface = Interface(self.language)
         figure = Figure()
@@ -220,7 +220,7 @@ class Main_window:
         pygame.mixer.music.load('Tetris Theme (Korobeiniki) [Orchestral Cover] (256  kbps).mp3')
         pygame.mixer.music.play(-1)
 
-        current_figure, next_figure, current_x, current_y, current_color = figure.new_figure()
+        current_figure, next_figure, current_x, current_y, next_y, current_color = figure.new_figure()
 
         while run:
             for event in pygame.event.get():
@@ -248,7 +248,7 @@ class Main_window:
                 # lines_removed = remove_full_lines()
                 # score += lines_removed ** 2
 
-                current_figure, next_figure, current_x, current_y, current_color = figure.new_figure()
+                current_figure, next_figure, current_x, current_y, next_y, current_color = figure.new_figure()
                 interface.remove_full_lines(board)
 
             screen.fill(BLACK)
@@ -263,6 +263,12 @@ class Main_window:
                     if board.get((j, i)):
                         figure.draw_block(j, i, current_color)
 
+            if current_y == 1 and next_y == 2:
+                self.game_over = True
+                pygame.mixer.music.pause()
+                self.start_screen()
+                run = False
+
             # проверка что за края экрана не улетело ничего
             if current_x < 0:
                 current_x = 0
@@ -270,6 +276,7 @@ class Main_window:
                 current_x = SCREEN_WIDTH // BLOCK_SIZE - len(current_figure[0])
             if current_y + len(current_figure) > SCREEN_HEIGHT // BLOCK_SIZE:
                 current_y = SCREEN_HEIGHT // BLOCK_SIZE - len(current_figure)
+
 
             figure.draw_figure(current_x, current_y, current_figure, current_color)
             figure.draw_figure(SCREEN_WIDTH // BLOCK_SIZE + 2, 2, next_figure, current_color)
