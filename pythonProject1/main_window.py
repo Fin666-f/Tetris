@@ -103,12 +103,20 @@ class Figure:
 
 
 class Interface:
+    def __init__(self, language):
+        self.language = language
+
     def draw_interface(self):
-        font = pygame.font.Font(None, 70)
-        text = font.render(f"Score: {score}", True, WHITE)
-        screen.blit(text, (10, 10))
+        if self.language == 'russian':
+            name = 'scores_rus.png'
+        else:
+            name = 'scores_eng.png'
+        score = pygame.image.load(name)
+        screen.blit(score, (40, 100))
+        pattern = pygame.image.load('pattern.png')
+        screen.blit(pattern, (542, 0))
         inner_rect = (X_WIN * BLOCK_SIZE, 0, BORDER_WIDTH, BORDER_HEIGHT)
-        pygame.draw.rect(screen, (139, 0, 255), inner_rect, 20)
+        pygame.draw.rect(screen, (255, 255, 255), inner_rect, 1)
 
     def check_collision(self, x, y, figure):
         for i in range(len(figure)):
@@ -122,24 +130,30 @@ class Interface:
                     return True
         return False
 
-
-    def remove_full_lines(blocks):
-        for key in blocks.keys():
-            if blocks[key]:
+    def remove_full_lines(self, blocks):
+        global score
+        for key in board.keys():
+            if board[key]:
                 x, y = key
                 if y in ys.keys():
                     ys[y].append(x)
                 else:
                     ys[y] = [x]
         for y in ys.keys():
-            print(set(ys[y]))
+            print(y, set(ys[y]))
             if len(set(ys[y])) == 14:
-                print(set(ys[y]))
-                print(board)
-                for x in ys[y]:
+                score += 1
+
+                for x in sorted(set(ys[y])):
                     if (x, y) in board.keys():
-                        del board[(x, y)]
-                print('hooray')
+                        keys = filter(lambda elem: elem[0] == x, board.keys())
+                        keys = sorted(keys, key=lambda elem: elem[-1])
+                        prev = 0
+                        for key in keys:
+                            del_x, del_y = key
+                            if (del_x, del_y) in board.keys():
+                                if board[(del_x, del_y)]:
+                                    board[(del_x, del_y)], prev = prev, board[(del_x, del_y)]
 
 
 class Main_window:
@@ -183,14 +197,12 @@ class Main_window:
         image = pygame.image.load(fullname)
         return image
 
-    def data(self, change_language=False, change_record=False):
+    def data(self, change_language=False):
         if change_language:
             if self.language == 'english':
                 self.language = 'russian'
             else:
                 self.language = 'english'
-        if change_record:
-            pass
         f1 = open('Tetris_data.txt', 'w', encoding='utf8')
         f1.write('\n'.join([self.language, self.record]))
 
@@ -201,10 +213,12 @@ class Main_window:
     def run_game(self):
         self.game_over = 0
         run = True
-        interface = Interface()
+        interface = Interface(self.language)
         figure = Figure()
         clock = pygame.time.Clock()
         image = pygame.image.load('church_Blazhenov.png')
+        pygame.mixer.music.load('Tetris Theme (Korobeiniki) [Orchestral Cover] (256  kbps).mp3')
+        pygame.mixer.music.play(-1)
 
         current_figure, next_figure, current_x, current_y, current_color = figure.new_figure()
 
@@ -213,17 +227,17 @@ class Main_window:
                 if event.type == pygame.QUIT:
                     self.terminate()
                 if event.type == pygame.KEYDOWN:
-                    if ((event.key == pygame.K_LEFT and self.count_left == '0') or (event.key == pygame.K_a and
-                                self.count_left == '1') or (event.key == pygame.K_z and self.count_left == '2')):
+                    if ((event.key == pygame.K_LEFT and self.count_left == '2') or (event.key == pygame.K_a and
+                                self.count_left == '1') or (event.key == pygame.K_z and self.count_left == '0')):
                         print(self.count_left)
                         if not interface.check_collision(current_x - 1, current_y, current_figure):
                             current_x -= 1
-                    elif ((event.key == pygame.K_RIGHT and self.count_right == '0') or (event.key == pygame.K_d and
-                                self.count_right == '1') or (event.key == pygame.K_c and self.count_right == '2')):
+                    elif ((event.key == pygame.K_RIGHT and self.count_right == '2') or (event.key == pygame.K_d and
+                                self.count_right == '1') or (event.key == pygame.K_c and self.count_right == '0')):
                         if not interface.check_collision(current_x + 1, current_y, current_figure):
                             current_x += 1
-                    elif ((event.key == pygame.K_DOWN and self.count_down == '0') or (event.key == pygame.K_s and
-                                self.count_down == '1') or (event.key == pygame.K_x and self.count_down == '2')):
+                    elif ((event.key == pygame.K_DOWN and self.count_down == '2') or (event.key == pygame.K_s and
+                                self.count_down == '1') or (event.key == pygame.K_x and self.count_down == '0')):
                         if not interface.check_collision(current_x, current_y + 1, current_figure):
                             current_y += 1
 
@@ -231,15 +245,23 @@ class Main_window:
                 current_y += 1
             else:
                 figure.add_figure_to_board(current_x, current_y, current_figure)
+                # lines_removed = remove_full_lines()
+                # score += lines_removed ** 2
+
                 current_figure, next_figure, current_x, current_y, current_color = figure.new_figure()
-                Interface.remove_full_lines(board)
+                interface.remove_full_lines(board)
 
             screen.fill(BLACK)
             screen.blit(image, (0, 0))
+
+            font = pygame.font.Font(None, 70)
+            text = font.render(str(score), True, (255, 255, 255))
+            screen.blit(text, (140, 190))
+
             for i in range(SCREEN_HEIGHT // BLOCK_SIZE):
                 for j in range(SCREEN_WIDTH // BLOCK_SIZE):
                     if board.get((j, i)):
-                        figure.draw_block(j, i, current_color, True)
+                        figure.draw_block(j, i, current_color)
 
             # проверка что за края экрана не улетело ничего
             if current_x < 0:
@@ -331,7 +353,7 @@ class Main_window:
                 self.control()
             elif (pos[0] >= ((SCREEN_WIDTH - 864) // 2) and pos[0] <= ((SCREEN_WIDTH - 864) // 2 + 864) and
                     pos[1] >= 640 and pos[1] <= 760):
-                self.data(True, False)
+                self.data(True)
             elif (pos[0] >= ((SCREEN_WIDTH - 864) // 2) and pos[0] <= ((SCREEN_WIDTH - 864) // 2 + 864) and
                     pos[1] >= 780 and pos[1] <= 900):
                 self.terminate()
