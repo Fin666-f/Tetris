@@ -7,8 +7,7 @@ pygame.init()
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 
-BLOCK_SIZE = 52
-ys = {}
+BLOCK_SIZE = 48
 
 BORDER_WIDTH = BLOCK_SIZE * 14
 BORDER_HEIGHT = BLOCK_SIZE * 20
@@ -70,9 +69,7 @@ class Figure:
         return self.current_figure, self.next_figure, self.current_x, self.current_y
 
     def draw_block(self, x, y, color):
-        fon = pygame.transform.scale(pygame.image.load('Dark_White_Block.png'), (BLOCK_SIZE, BLOCK_SIZE))
-        screen.blit(fon, (x * BLOCK_SIZE, y * BLOCK_SIZE))
-        #pygame.draw.rect(screen, color, (x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
+        pygame.draw.rect(screen, color, (x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
 
     def draw_figure(self, x, y, figure, color):
         for i in range(len(figure)):
@@ -87,11 +84,12 @@ class Figure:
                     board[(x + j, y + i)] = 1
 
 
+
 class Interface:
     def draw_interface(self):
-        font = pygame.font.Font(None, 70)
-        text = font.render(f"Score: {score}", True, WHITE)
-        screen.blit(text, (10, 10))
+        #font = pygame.font.Font(None, 70)
+        #text = font.render(f"Score: {score}", True, WHITE)
+        #screen.blit(text, (30, 30))
         inner_rect = (X_WIN * BLOCK_SIZE, 0, BORDER_WIDTH, BORDER_HEIGHT)
         pygame.draw.rect(screen, PURPLE, inner_rect, 20)
 
@@ -108,23 +106,6 @@ class Interface:
         return False
 
 
-    def remove_full_lines(blocks):
-        for key in blocks.keys():
-            if blocks[key]:
-                x, y = key
-                if y in ys.keys():
-                    ys[y].append(x)
-                else:
-                    ys[y] = [x]
-        for y in ys.keys():
-            print(set(ys[y]))
-            if len(set(ys[y])) == 14:
-                print(set(ys[y]))
-                print(board)
-                for x in ys[y]:
-                    if (x, y) in board.keys():
-                        del board[(x, y)]
-                print('hooray')
 
 
 interface = Interface()
@@ -134,6 +115,38 @@ score = 0
 running = True
 clock = pygame.time.Clock()
 image = pygame.image.load('kreml.png')
+
+ys = {}
+
+
+def remove_full_lines(blocks):
+    global score
+    for key in board.keys():
+        if board[key]:
+            x, y = key
+            if y in ys.keys():
+                ys[y].append(x)
+            else:
+                ys[y] = [x]
+    for y in ys.keys():
+        print(y, set(ys[y]))
+        if len(set(ys[y])) == 14:
+            score += 1
+
+            for x in sorted(set(ys[y])):
+                if (x, y) in board.keys():
+                    keys = filter(lambda elem: elem[0] == x, board.keys())
+                    keys = sorted(keys, key=lambda elem: elem[-1])
+                    prev = 0
+                    for key in keys:
+                        del_x, del_y = key
+                        if (del_x, del_y) in board.keys():
+                            if board[(del_x, del_y)]:
+                                board[(del_x, del_y)], prev = prev, board[(del_x, del_y)]
+
+
+            print('hooray')
+
 
 current_figure, next_figure, current_x, current_y = figure.new_figure()
 
@@ -161,11 +174,20 @@ while running:
         current_y += 1
     else:
         figure.add_figure_to_board(current_x, current_y, current_figure)
+        #lines_removed = remove_full_lines()
+        #score += lines_removed ** 2
+
         current_figure, next_figure, current_x, current_y = figure.new_figure()
-        Interface.remove_full_lines(board)
+        remove_full_lines(board)
 
     screen.fill(BLACK)
     screen.blit(image, (0, 0))
+
+    font = pygame.font.Font(None, 100)
+    text = font.render(f"Score: {score}", True, PURPLE)
+    screen.blit(text, (200, 120))
+
+
     for i in range(SCREEN_HEIGHT // BLOCK_SIZE):
         for j in range(SCREEN_WIDTH // BLOCK_SIZE):
             if board.get((j, i)):
@@ -187,6 +209,7 @@ while running:
     pygame.display.flip()
 
     clock.tick(FALL_SPEED)
+
     pygame.display.update()
 
 pygame.quit()
