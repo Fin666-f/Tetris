@@ -8,6 +8,7 @@ SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 
 BLOCK_SIZE = 52
+ys = {}
 
 BORDER_WIDTH = BLOCK_SIZE * 14
 BORDER_HEIGHT = BLOCK_SIZE * 20
@@ -69,7 +70,9 @@ class Figure:
         return self.current_figure, self.next_figure, self.current_x, self.current_y
 
     def draw_block(self, x, y, color):
-        pygame.draw.rect(screen, color, (x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
+        fon = pygame.transform.scale(pygame.image.load('Dark_White_Block.png'), (BLOCK_SIZE, BLOCK_SIZE))
+        screen.blit(fon, (x * BLOCK_SIZE, y * BLOCK_SIZE))
+        #pygame.draw.rect(screen, color, (x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
 
     def draw_figure(self, x, y, figure, color):
         for i in range(len(figure)):
@@ -104,26 +107,24 @@ class Interface:
                     return True
         return False
 
-ys = {}
 
-
-def remove_full_lines(blocks):
-    for key in blocks.keys():
-        if blocks[key]:
-            x, y = key
-            if y in ys.keys():
-                ys[y].append(x)
-            else:
-                ys[y] = [x]
-    for y in ys.keys():
-        print(set(ys[y]))
-        if len(set(ys[y])) == 14:
+    def remove_full_lines(blocks):
+        for key in blocks.keys():
+            if blocks[key]:
+                x, y = key
+                if y in ys.keys():
+                    ys[y].append(x)
+                else:
+                    ys[y] = [x]
+        for y in ys.keys():
             print(set(ys[y]))
-            print(board)
-            for x in ys[y]:
-                if (x, y) in board.keys():
-                    del board[(x, y)]
-            print('hooray')
+            if len(set(ys[y])) == 14:
+                print(set(ys[y]))
+                print(board)
+                for x in ys[y]:
+                    if (x, y) in board.keys():
+                        del board[(x, y)]
+                print('hooray')
 
 
 interface = Interface()
@@ -161,7 +162,7 @@ while running:
     else:
         figure.add_figure_to_board(current_x, current_y, current_figure)
         current_figure, next_figure, current_x, current_y = figure.new_figure()
-        remove_full_lines(board)
+        Interface.remove_full_lines(board)
 
     screen.fill(BLACK)
     screen.blit(image, (0, 0))

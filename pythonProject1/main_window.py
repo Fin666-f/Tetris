@@ -1,17 +1,152 @@
 import sys
 import pygame
 import os
+import random
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
+
+BLOCK_SIZE = 52
+
+BORDER_WIDTH = BLOCK_SIZE * 14
+BORDER_HEIGHT = BLOCK_SIZE * 20
+
+X_WIN = (SCREEN_WIDTH - BORDER_WIDTH) // 2 // BLOCK_SIZE
+
+COLORS = ['White', 'Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Pink']
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GRAY = (128, 128, 128)
+
+FALL_SPEED = 3  # скорость падения фигур. оптимальная 3-5
+
+FIGURES = [
+    [[1, 1],
+     [1, 1]],
+
+    [[1, 1, 1],
+     [0, 1, 0]],
+
+    [[1, 1, 1],
+     [1, 0, 0]],
+
+    [[1, 1, 1],
+     [0, 0, 1]],
+
+    [[0, 1, 1],
+     [1, 1, 0]],
+
+    [[1, 0, 0],
+     [1, 1, 1]],
+
+    [[0, 0, 1],
+     [1, 1, 1]]
+]
+
+blocks = {}
+ys = {}
+board = {}
+score = 0
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+
+class Figure:
+    def new_figure(self):
+        self.current_figure = random.choice(FIGURES)
+        self.next_figure = random.choice(FIGURES)
+
+        # координаты фигуры, посередине экрана
+        self.current_x = (SCREEN_WIDTH // BLOCK_SIZE - len(self.current_figure[0])) // 2
+        self.current_y = 1
+
+        self.next_x = SCREEN_WIDTH // BLOCK_SIZE + 2
+        self.next_y = 2
+
+        self.current_color = random.choice(COLORS)
+        self.next_color = random.choice(COLORS)
+
+        # пока что все белого цвета, серого когда упадут
+        self.draw_figure(self.current_x, self.current_y, self.current_figure, self.current_color)
+        self.draw_figure(self.next_x, self.next_y, self.next_figure, self.next_color)
+
+        return self.current_figure, self.next_figure, self.current_x, self.current_y, self.current_color
+
+    def load_image(self, color, dark=False):
+        name = color + '_Block.png'
+        if dark:
+            s = 'Dark_Color_block'
+            name = 'Dark_' + name
+        else:
+            s = 'Color_block'
+        fullname = os.path.join(s, name)
+        return fullname
+
+    def draw_block(self, x, y, color, dark=False):
+        if not dark:
+            color_block = self.load_image(color)
+        else:
+            color_block = self.load_image(color, True)
+        fon = pygame.transform.scale(pygame.image.load(color_block), (BLOCK_SIZE, BLOCK_SIZE))
+        screen.blit(fon, (x * BLOCK_SIZE, y * BLOCK_SIZE))
+
+    def draw_figure(self, x, y, figure, color):
+        for i in range(len(figure)):
+            for j in range(len(figure[i])):
+                if figure[i][j]:
+                    self.draw_block(x + j, y + i, color)
+
+    def add_figure_to_board(self, x, y, figure):
+        for i in range(len(figure)):
+            for j in range(len(figure[i])):
+                if figure[i][j]:
+                    board[(x + j, y + i)] = 1
+
+
+class Interface:
+    def draw_interface(self):
+        font = pygame.font.Font(None, 70)
+        text = font.render(f"Score: {score}", True, WHITE)
+        screen.blit(text, (10, 10))
+        inner_rect = (X_WIN * BLOCK_SIZE, 0, BORDER_WIDTH, BORDER_HEIGHT)
+        pygame.draw.rect(screen, (139, 0, 255), inner_rect, 20)
+
+    def check_collision(self, x, y, figure):
+        for i in range(len(figure)):
+            for j in range(len(figure[i])):
+                if figure[i][j] and (x + j < X_WIN or x + j >= X_WIN + BORDER_WIDTH // BLOCK_SIZE or
+                                      y + i >= BORDER_HEIGHT // BLOCK_SIZE or board.get((x + j, y + i))):
+                    if y in blocks.keys():
+                        blocks[y].append(x)
+                    else:
+                        blocks[y] = [x]
+                    return True
+        return False
+
+
+    def remove_full_lines(blocks):
+        for key in blocks.keys():
+            if blocks[key]:
+                x, y = key
+                if y in ys.keys():
+                    ys[y].append(x)
+                else:
+                    ys[y] = [x]
+        for y in ys.keys():
+            print(set(ys[y]))
+            if len(set(ys[y])) == 14:
+                print(set(ys[y]))
+                print(board)
+                for x in ys[y]:
+                    if (x, y) in board.keys():
+                        del board[(x, y)]
+                print('hooray')
 
 
 class Main_window:
     def __init__(self):
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption('Main window')
+        pygame.display.set_caption('Tetris')
         self.fps = 50
         with open('Tetris_data.txt', 'r', encoding='utf8') as f:
             data = ''.join(f.readlines()).split('\n')
@@ -66,18 +201,62 @@ class Main_window:
     def run_game(self):
         self.game_over = 0
         run = True
+        interface = Interface()
+        figure = Figure()
+        clock = pygame.time.Clock()
+        image = pygame.image.load('church_Blazhenov.png')
+
+        current_figure, next_figure, current_x, current_y, current_color = figure.new_figure()
+
         while run:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.terminate()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_1:
-                    self.game_over += 1
-            if self.game_over == 5:
-                self.start_screen()
-                run = False
-            self.screen.fill(pygame.Color('blue'))
+                if event.type == pygame.KEYDOWN:
+                    if ((event.key == pygame.K_LEFT and self.count_left == '0') or (event.key == pygame.K_a and
+                                self.count_left == '1') or (event.key == pygame.K_z and self.count_left == '2')):
+                        print(self.count_left)
+                        if not interface.check_collision(current_x - 1, current_y, current_figure):
+                            current_x -= 1
+                    elif ((event.key == pygame.K_RIGHT and self.count_right == '0') or (event.key == pygame.K_d and
+                                self.count_right == '1') or (event.key == pygame.K_c and self.count_right == '2')):
+                        if not interface.check_collision(current_x + 1, current_y, current_figure):
+                            current_x += 1
+                    elif ((event.key == pygame.K_DOWN and self.count_down == '0') or (event.key == pygame.K_s and
+                                self.count_down == '1') or (event.key == pygame.K_x and self.count_down == '2')):
+                        if not interface.check_collision(current_x, current_y + 1, current_figure):
+                            current_y += 1
+
+            if not interface.check_collision(current_x, current_y + 1, current_figure):
+                current_y += 1
+            else:
+                figure.add_figure_to_board(current_x, current_y, current_figure)
+                current_figure, next_figure, current_x, current_y, current_color = figure.new_figure()
+                Interface.remove_full_lines(board)
+
+            screen.fill(BLACK)
+            screen.blit(image, (0, 0))
+            for i in range(SCREEN_HEIGHT // BLOCK_SIZE):
+                for j in range(SCREEN_WIDTH // BLOCK_SIZE):
+                    if board.get((j, i)):
+                        figure.draw_block(j, i, current_color, True)
+
+            # проверка что за края экрана не улетело ничего
+            if current_x < 0:
+                current_x = 0
+            elif current_x + len(current_figure[0]) > SCREEN_WIDTH // BLOCK_SIZE:
+                current_x = SCREEN_WIDTH // BLOCK_SIZE - len(current_figure[0])
+            if current_y + len(current_figure) > SCREEN_HEIGHT // BLOCK_SIZE:
+                current_y = SCREEN_HEIGHT // BLOCK_SIZE - len(current_figure)
+
+            figure.draw_figure(current_x, current_y, current_figure, current_color)
+            figure.draw_figure(SCREEN_WIDTH // BLOCK_SIZE + 2, 2, next_figure, current_color)
+            interface.draw_interface()
+
             pygame.display.flip()
-            self.clock.tick(self.fps)
+
+            clock.tick(FALL_SPEED)
+            pygame.display.update()
 
     def prosses_control(self, pos, button):
         if button == 1:
@@ -101,23 +280,23 @@ class Main_window:
 
     def render_control_screen(self):
         fon = pygame.transform.scale(pygame.image.load('kreml.png'), (SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.screen.blit(fon, (0, 0))
+        screen.blit(fon, (0, 0))
         font_tetris = self.load_image('control.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 1440) // 2, 100))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 1440) // 2, 100))
         font_tetris = self.button('left')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2 + 884, 360))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2 + 884, 360))
         font_tetris = self.load_image('left.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 360))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 360))
         font_tetris = self.button('right')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2 + 884, 500))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2 + 884, 500))
         font_tetris = self.load_image('right.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 500))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 500))
         font_tetris = self.button('down')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2 + 884, 640))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2 + 884, 640))
         font_tetris = self.load_image('down.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 640))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 640))
         font_tetris = self.load_image('back.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 780))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 780))
 
     def save_control(self):
         f1 = open('Tetris_control.txt', 'w', encoding='utf8')
@@ -138,6 +317,7 @@ class Main_window:
             if not self.continue_run:
                 self.start_screen()
                 run = False
+
             pygame.display.flip()
             self.clock.tick(self.fps)
 
@@ -158,17 +338,17 @@ class Main_window:
 
     def render_main_screen(self):
         fon = pygame.transform.scale(pygame.image.load('kreml.png'), (SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.screen.blit(fon, (0, 0))
+        screen.blit(fon, (0, 0))
         font_tetris = pygame.image.load('Textis.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 1440) // 2, 100))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 1440) // 2, 100))
         font_tetris = self.load_image('play.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 360))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 360))
         font_tetris = self.load_image('control_1.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 500))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 500))
         font_tetris = self.load_image('language.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 640))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 640))
         font_tetris = self.load_image('exit.png')
-        self.screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 780))
+        screen.blit(font_tetris, ((SCREEN_WIDTH - 864) // 2, 780))
 
     def start_screen(self):
         self.render_main_screen()
