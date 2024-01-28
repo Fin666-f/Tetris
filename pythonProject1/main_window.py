@@ -262,12 +262,11 @@ class Main_window:
                 for j in range(SCREEN_WIDTH // BLOCK_SIZE):
                     if board.get((j, i)):
                         figure.draw_block(j, i, current_color)
-
-            if current_y == 1 and next_y == 2:
-                self.game_over = True
-                pygame.mixer.music.pause()
-                self.start_screen()
-                run = False
+                        if i == 1:
+                            self.game_over = True
+                            pygame.mixer.music.pause()
+                            self.start_screen()
+                            run = False
 
             # проверка что за края экрана не улетело ничего
             if current_x < 0:
