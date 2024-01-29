@@ -116,11 +116,10 @@ running = True
 clock = pygame.time.Clock()
 image = pygame.image.load('kreml.png')
 
-ys = {}
-
 
 def remove_full_lines(blocks):
     global score
+    ys = {}
     for key in board.keys():
         if board[key]:
             x, y = key
@@ -129,9 +128,10 @@ def remove_full_lines(blocks):
             else:
                 ys[y] = [x]
     for y in ys.keys():
-        print(y, set(ys[y]))
+        #print(y, set(ys[y]))
         if len(set(ys[y])) == 14:
             score += 1
+            print(1, board)
 
             for x in sorted(set(ys[y])):
                 if (x, y) in board.keys():
@@ -142,10 +142,18 @@ def remove_full_lines(blocks):
                         del_x, del_y = key
                         if (del_x, del_y) in board.keys():
                             if board[(del_x, del_y)]:
+                                print('do', board[(del_x, del_y)])
                                 board[(del_x, del_y)], prev = prev, board[(del_x, del_y)]
+                                print('po', board[(del_x, del_y)])
+
+            print(2, board)
+
 
 
             print('hooray')
+            print()
+
+    ys = {}
 
 
 current_figure, next_figure, current_x, current_y = figure.new_figure()
@@ -192,6 +200,10 @@ while running:
         for j in range(SCREEN_WIDTH // BLOCK_SIZE):
             if board.get((j, i)):
                 figure.draw_block(j, i, GRAY)
+                if i == 1:
+                    print('ppp')
+                    exit()
+                    pygame.quit()
 
 
     # проверка что за края экрана не улетело ничего
