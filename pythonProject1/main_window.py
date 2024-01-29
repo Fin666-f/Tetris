@@ -132,6 +132,7 @@ class Interface:
 
     def remove_full_lines(self, blocks):
         global score
+        ys = {}
         for key in board.keys():
             if board[key]:
                 x, y = key
@@ -154,6 +155,7 @@ class Interface:
                             if (del_x, del_y) in board.keys():
                                 if board[(del_x, del_y)]:
                                     board[(del_x, del_y)], prev = prev, board[(del_x, del_y)]
+        ys = {}
 
 
 class Main_window:
